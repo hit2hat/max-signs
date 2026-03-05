@@ -26,10 +26,18 @@ func main() {
 	var appDataEncoded string
 	fragmentParams := strings.Split(fragment, "&")
 	for _, p := range fragmentParams {
-		if strings.HasPrefix(p, "WebAppData=") {
-			appDataEncoded = strings.TrimPrefix(p, "WebAppData=")
-		}
-	}
+        if strings.HasPrefix(p, "WebAppData=") {
+            // Если значение уже было записано, значит это дубликат
+            if appDataEncoded != "" {
+                panic("Duplicate WebAppData parameter found")
+            }
+            appDataEncoded = strings.TrimPrefix(p, "WebAppData=")
+        }
+    }
+
+    if appDataEncoded == "" {
+        panic("WebAppData parameter not found")
+    }
 
 	// Декодируем само значение WebAppData
 	appData, err := url.QueryUnescape(appDataEncoded)
@@ -60,27 +68,31 @@ func ValidateAppData(initData, botToken string) (bool, error) {
 
     // Перебираем параметры
 	for _, pair := range pairs {
-		kv := strings.SplitN(pair, "=", 2)
-		if len(kv) != 2 {
-			continue
-		}
-		key := kv[0]
-		val := kv[1]
+        kv := strings.SplitN(pair, "=", 2)
+        if len(kv) != 2 {
+            continue
+        }
 
-        // Запоминаем оригинальный хеш и не включаем его для дальнейших манипуляций
-		if key == "hash" {
-			originalHash = val
-			continue
-		}
+        key := kv[0]
+        val := kv[1]
+
+        if key == "hash" {
+            // Если originalHash уже заполнен, значит встретили второй такой ключ
+            if originalHash != "" {
+                return false, fmt.Errorf("duplicate hash parameter found")
+            }
+            originalHash = val
+            continue
+        }
 
         // Производим url-декодирование
-		decodedVal, err := url.QueryUnescape(val)
-		if err != nil {
-			return false, fmt.Errorf("failed to decode val: %v", err)
-		}
+        decodedVal, err := url.QueryUnescape(val)
+        if err != nil {
+            return false, fmt.Errorf("failed to decode val: %v", err)
+        }
 
-		params = append(params, paramPair{key: key, value: decodedVal})
-	}
+        params = append(params, paramPair{key: key, value: decodedVal})
+    }
 
     // Если hash не был найдет, то проверить подпись не получится
 	if originalHash == "" {
