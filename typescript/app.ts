@@ -12,6 +12,11 @@ const validateAppData = async (appData: string, botToken: string): Promise<boole
     // Преобразуем appData из key1=value1&key2=value2 в [["key", "value"], ["key2", "value2"]]
     const params: string[][] = appData.split('&').map((x) => x.split('='));
 
+    // Если hash встречается два раза - это непредсказуемое поведение, нам следует прервать проверку
+    if (params.filter((x) => x[0] === 'hash').length !== 1) {
+        return false;
+    }
+
     // Запоминаем хеш, который пришел вместе с параметрами
     const originalHash = params.find((x) => x[0] === 'hash');
 
