@@ -19,7 +19,7 @@ def validate_app_data(app_data: str, bot_token: str) -> bool:
     """
     # Парсим строку данных (key1=value1&key2=value2...) в список кортежей.
     # parse_qsl автоматически делает url-декодирование значений.
-    params = parse_qsl(app_data, keep_blank_values=True)
+    params = list(dict(parse_qsl(app_data, keep_blank_values=True)).items())
 
     # Ищем параметр hash и удаляем его из списка параметров для проверки
     original_hash = next((value for key, value in params if key == 'hash'), None)
